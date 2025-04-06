@@ -1,68 +1,82 @@
-# fonts.defeo.io — Google Font Pairing Tool
+# 🎨 Google Fonts Pairing Tool
 
-An easy way to pair up and preview Google fonts!
+An intuitive web app that helps designers and developers explore and pair Google Fonts with ease. Try it live at **[fonts.defeo.io](https://fonts.defeo.io)**
 
-**Live site**: [fonts.defeo.io](https://fonts.defeo.io)  
-**Repo**: [github.com/mdefeo/fonts.defeo.io](https://github.com/mdefeo/fonts.defeo.io)
-
-![Screenshot of fonts.defeo.io](./public/og.jpg)
-
----
+![Screenshot](public/og.jpg)
 
 ## Features
 
-
-- One-click CSS copy
-
----
+- Browse and pair any fonts from the [Google Fonts](https://fonts.google.com/) directory
+- Live font previews with customizable text and sizes
+- Font filtering and dropdown with dynamic data
+- Modern, responsive UI built with performance in mind
 
 ## Getting Started
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/mdefeo/fonts.defeo.io.git
 cd fonts.defeo.io
 ```
 
-### 2. Install dependencies
+### 2. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-Or use npm install or yarn install if preferred.
+### 3. Generate the Google Fonts List
 
-### 3. Run locally
+Before running the app, you need to generate and update the Google Fonts data.
+
+#### Step A: Fetch Active Google Fonts
+
+This script retrieves the active list of fonts from the Google Fonts API. Run it from the root directory of the project.
 
 ```bash
-pnpm dev
+node scripts/fetch-google-fonts.js
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the app.
+#### Step B: Update the Fonts JSON
 
-### Built With
+Once fonts are fetched, update the local fonts.json file used by the app:
 
-- Next.js
-- Tailwind CSS
-- TypeScript
-- Lucide Icons
+```bash
+node scripts/update-google-fonts.js
+```
 
-### Design Goals & Inspiration
+## Development
 
+This project is automatically deployed to Vercel. To start the local dev server:
 
+```bash
+pnpm run dev
+```
 
-### Deployment
+Then visit [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-This project is automatically deployed to Vercel.
+## Project Structure
 
-Visit [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```bash
+/fonts.defeo.io
+│
+├── public/            # Static assets and screenshot
+├── scripts/           # Scripts for fetching and updating font data
+├── src/               # App source code
+│   └── components/    # UI components
+│   └── lib/           # Utilities and logic
+│   └── data/          # fonts.json lives here
+├── .env               # Add your API key here
+├── package.json
+└── README.md
+```
 
-### License
+## License
 
 [MIT](./LICENSE)
 
-### Author
+## Author
 
 Marcello De Feo
 [defeo.io](https://defeo.io/)

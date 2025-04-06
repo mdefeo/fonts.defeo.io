@@ -25,7 +25,6 @@ export default function ContentEditable({
   const contentEditableRef = useRef<HTMLElement>(null)
   const htmlRef = useRef(html)
 
-  // Initialize content when component mounts and update when html prop changes
   useEffect(() => {
     if (contentEditableRef.current) {
       contentEditableRef.current.innerHTML = html
@@ -33,7 +32,6 @@ export default function ContentEditable({
     }
   }, [html])
 
-  // Only update parent state when focus is lost
   const handleBlur = () => {
     if (contentEditableRef.current) {
       const newHtml = contentEditableRef.current.innerHTML

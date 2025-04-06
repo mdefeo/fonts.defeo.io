@@ -7,25 +7,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
-import { Clipboard, Check, Search, Loader2, Italic, Underline, StrikethroughIcon } from "lucide-react"
+import { Clipboard, Check, Search, Loader2, Italic, Underline, StrikethroughIcon, Plus } from "lucide-react"
 import ContentEditable from "@/components/content-editable"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-// Import the local fonts data
-import localFontsData from "@/data/google-fonts.json"
 
-// Font categories
 const FONT_CATEGORIES = [
   { value: "all", label: "All Fonts" },
+  { value: "sans serif", label: "Sans Serif" },
   { value: "serif", label: "Serif" },
-  { value: "sans-serif", label: "Sans Serif" },
+  { value: "monospace", label: "Monospace" },
   { value: "display", label: "Display" },
   { value: "handwriting", label: "Handwriting" },
-  { value: "monospace", label: "Monospace" },
 ]
 
-// CSS Units
 const CSS_UNITS = [
   { value: "px", label: "Pixels (px)" },
   { value: "rem", label: "Rem (rem)" },
@@ -36,7 +32,6 @@ const CSS_UNITS = [
   { value: "ch", label: "Character width (ch)" },
 ]
 
-// Common font weights
 const FONT_WEIGHTS = [
   { value: "100", label: "Thin (100)" },
   { value: "200", label: "Extra Light (200)" },
@@ -49,12 +44,10 @@ const FONT_WEIGHTS = [
   { value: "900", label: "Black (900)" },
 ]
 
-// Default text content
 const DEFAULT_HEADING = "The quick brown fox jumps over the lazy dog"
 const DEFAULT_PARAGRAPH =
   "The quick brown fox jumps over the lazy dog. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 
-// Default unit ranges
 const UNIT_RANGES = {
   px: {
     fontSize: { min: 12, max: 72, step: 1 },
@@ -93,85 +86,196 @@ const UNIT_RANGES = {
   },
 }
 
-// Line height doesn't have units
 const LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.1 }
 
-// Helper function to get available weights for a font
 const getAvailableWeights = (fontFamily: string, fonts: any[]): string[] => {
   const font = fonts.find((f) => f.family === fontFamily)
-  if (!font) return ["400", "700"] // Default to regular and bold if font not found
+  if (!font || !font.variants || font.variants.length === 0) return ["400", "700"] 
 
-  // Extract weights from variants (e.g., "700italic" -> "700")
   const weights = font.variants
     .map((variant: string) => {
-      // Extract the numeric part (weight)
+      if (variant === "regular") return "400"
+      if (variant === "italic") return "400"
       const match = variant.match(/^(\d+)/)
-      return match ? match[1] : variant === "regular" ? "400" : variant === "italic" ? "400" : null
+      return match ? match[1] : null
     })
     .filter((weight: string | null) => weight !== null)
 
-  // Remove duplicates
   return [...new Set(weights)]
 }
 
-// Helper function to check if a font has italic variant
 const hasItalicVariant = (fontFamily: string, fonts: any[]): boolean => {
   const font = fonts.find((f) => f.family === fontFamily)
-  if (!font) return true // Default to true if font not found
+  if (!font || !font.variants || font.variants.length === 0) return true
 
   return font.variants.some((variant: string) => variant.includes("italic"))
 }
 
-// Font loading utility
 const FontLoader = {
   loadedFonts: new Set<string>(),
+  loadingErrors: new Map<string, string>(),
 
-  // Load a font with specific weight and style
   loadFont: (fontFamily: string, weight = "400", isItalic = false): void => {
     const fontKey = `${fontFamily}:${weight}:${isItalic ? "italic" : "normal"}`
     if (FontLoader.loadedFonts.has(fontKey)) return
+    if (FontLoader.loadingErrors.has(fontKey)) return
 
     try {
-      // Use a simple link element to load the font
       const link = document.createElement("link")
       link.rel = "stylesheet"
 
-      // Format: family=Roboto:wght@400;700&family=Open+Sans:ital,wght@0,400;1,400
       const fontStyle = isItalic ? "ital,wght@1," + weight : "wght@" + weight
       link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, "+")}:${fontStyle}&display=swap`
 
+      link.onload = () => {
+        console.log(`Font loaded: ${fontFamily} (${weight}${isItalic ? " italic" : ""})`)
+        FontLoader.loadedFonts.add(fontKey)
+      }
+
+      link.onerror = (err) => {
+        console.error(`Error loading font ${fontFamily} (${weight}${isItalic ? " italic" : ""}):`, err)
+        FontLoader.loadingErrors.set(fontKey, `Failed to load ${fontFamily} with weight ${weight}`)
+
+        if (weight !== "400" && !FontLoader.loadedFonts.has(`${fontFamily}:400:${isItalic ? "italic" : "normal"}`)) {
+          console.log(`Attempting to load ${fontFamily} with fallback weight 400`)
+          FontLoader.loadFont(fontFamily, "400", isItalic)
+        }
+      }
+
       document.head.appendChild(link)
-      FontLoader.loadedFonts.add(fontKey)
     } catch (error) {
       console.error(`Error loading font ${fontFamily}:`, error)
+      FontLoader.loadingErrors.set(fontKey, `Exception loading ${fontFamily}`)
     }
   },
 
-  // Load multiple font configurations
   loadFontConfigs: (configs: Array<{ family: string; weight: string; isItalic: boolean }>): void => {
     configs.forEach(({ family, weight, isItalic }) => FontLoader.loadFont(family, weight, isItalic))
   },
+
+  isWeightAvailable: (fontFamily: string, weight: string, fonts: any[]): boolean => {
+    const font = fonts.find((f) => f.family === fontFamily)
+    if (!font || !font.variants || font.variants.length === 0) return false
+
+    return font.variants.some((variant: string) => {
+      if (weight === "400" && variant === "regular") return true
+      return variant === weight || variant.startsWith(weight + "italic")
+    })
+  },
 }
 
-// Custom font select component
+let googleFontsCache: any[] | null = null
+
+async function fetchAllGoogleFonts() {
+  if (googleFontsCache) {
+    return googleFontsCache
+  }
+
+  try {
+    const response = await fetch(
+      "https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc",
+    )
+    if (!response.ok) {
+      throw new Error(`Failed to fetch fonts: ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    const allFonts = data.items || []
+
+    const sortedFonts = [...allFonts].sort((a, b) => a.family.localeCompare(b.family))
+
+    googleFontsCache = sortedFonts
+
+    return sortedFonts
+  } catch (error) {
+    console.error("Error fetching Google Fonts:", error)
+    return []
+  }
+}
+
+async function fetchGoogleFontsBatch(page = 0, pageSize = 20, category?: string) {
+  try {
+    const allFonts = await fetchAllGoogleFonts()
+
+    const filteredFonts =
+      category && category !== "all"
+        ? allFonts.filter((font: any) => {
+            const fontCategory = font.category?.toLowerCase() || ""
+            if (category === "sans serif" && (fontCategory === "sans-serif" || fontCategory === "sans serif")) {
+              return true
+            }
+            return fontCategory === category
+          })
+        : allFonts
+
+    const startIndex = page * pageSize
+    const endIndex = startIndex + pageSize
+    const fontsBatch = filteredFonts.slice(startIndex, endIndex)
+
+    return {
+      fonts: fontsBatch,
+      hasMore: endIndex < filteredFonts.length,
+      totalFonts: filteredFonts.length,
+      totalLoaded: Math.min(endIndex, filteredFonts.length),
+    }
+  } catch (error) {
+    console.error("Error fetching Google Fonts:", error)
+    return {
+      fonts: [],
+      hasMore: false,
+      totalFonts: 0,
+      totalLoaded: 0,
+    }
+  }
+}
+
+async function fetchTotalFontCount(category?: string) {
+  try {
+    const allFonts = await fetchAllGoogleFonts()
+
+    if (category && category !== "all") {
+      return allFonts.filter((font: any) => {
+        const fontCategory = font.category?.toLowerCase() || ""
+        if (category === "sans serif" && (fontCategory === "sans-serif" || fontCategory === "sans serif")) {
+          return true
+        }
+        return fontCategory === category
+      }).length
+    }
+
+    return allFonts.length
+  } catch (error) {
+    console.error("Error fetching font count:", error)
+    return 0
+  }
+}
+
 function FontSelect({
   value,
   onValueChange,
   fonts,
   isLoading,
   id,
+  onLoadMore,
+  isLoadingMore,
+  hasMoreFonts,
+  totalLoaded,
+  totalFonts,
 }: {
   value: string
   onValueChange: (value: string) => void
   fonts: any[]
   isLoading: boolean
   id: string
+  onLoadMore: () => void
+  isLoadingMore: boolean
+  hasMoreFonts: boolean
+  totalLoaded: number
+  totalFonts: number
 }) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Filter fonts based on search query
   const filteredFonts = fonts.filter(
     (font) =>
       font &&
@@ -180,7 +284,6 @@ function FontSelect({
       font.family.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  // Focus search input when dropdown opens
   useEffect(() => {
     if (open && searchInputRef.current) {
       setTimeout(() => {
@@ -218,11 +321,38 @@ function FontSelect({
           ) : filteredFonts.length === 0 ? (
             <div className="p-2 text-center text-muted-foreground">No fonts found</div>
           ) : (
-            filteredFonts.map((font) => (
-              <SelectItem key={font.family} value={font.family} className="py-3">
-                {font.family}
-              </SelectItem>
-            ))
+            <>
+              {filteredFonts.map((font) => (
+                <SelectItem key={font.family} value={font.family} className="py-3">
+                  {font.family}
+                </SelectItem>
+              ))}
+              {hasMoreFonts && (
+                <div className="p-2 border-t mt-2">
+                  <Button
+                    variant="outline"
+                    className="w-full flex items-center justify-center"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onLoadMore()
+                    }}
+                    disabled={isLoadingMore || !hasMoreFonts}
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading more fonts...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Load More ({totalLoaded}/{totalFonts})
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </ScrollArea>
       </SelectContent>
@@ -230,7 +360,6 @@ function FontSelect({
   )
 }
 
-// Font weight select component
 function FontWeightSelect({
   value,
   onValueChange,
@@ -242,7 +371,6 @@ function FontWeightSelect({
   availableWeights: string[]
   id: string
 }) {
-  // Filter the FONT_WEIGHTS array to only include weights that are available for this font
   const filteredWeights = FONT_WEIGHTS.filter((weight) => availableWeights.includes(weight.value))
 
   return (
@@ -266,24 +394,27 @@ function FontWeightSelect({
 }
 
 export default function FontPairingGenerator() {
-  // State for fonts
   const [fonts, setFonts] = useState<any[]>([])
   const [filteredFonts, setFilteredFonts] = useState<any[]>([])
-  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedCategory, setSelectedCategory] = useState("sans serif")
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [hasMoreFonts, setHasMoreFonts] = useState(true)
+  const [totalFonts, setTotalFonts] = useState(0)
+  const [totalLoaded, setTotalLoaded] = useState(0)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
-  // State for selected fonts and styles
   const [headingFont, setHeadingFont] = useState("Playfair Display")
   const [paragraphFont, setParagraphFont] = useState("Source Sans Pro")
 
-  // State for typography settings with units
   const [headingSettings, setHeadingSettings] = useState({
     fontSize: { value: 36, unit: "px" },
     lineHeight: 1.2,
     letterSpacing: { value: 0, unit: "px" },
     wordSpacing: { value: 0, unit: "px" },
     fontWeight: "700",
-    textStyle: [] as string[], // For italic, underline, strikethrough
+    textStyle: [] as string[], 
   })
 
   const [paragraphSettings, setParagraphSettings] = useState({
@@ -292,104 +423,122 @@ export default function FontPairingGenerator() {
     letterSpacing: { value: 0, unit: "px" },
     wordSpacing: { value: 0, unit: "px" },
     fontWeight: "400",
-    textStyle: [] as string[], // For italic, underline, strikethrough
+    textStyle: [] as string[], 
   })
 
-  // State for available font weights
   const [headingAvailableWeights, setHeadingAvailableWeights] = useState<string[]>(["400", "700"])
   const [paragraphAvailableWeights, setParagraphAvailableWeights] = useState<string[]>(["400", "700"])
 
-  // State for font italic availability
   const [headingHasItalic, setHeadingHasItalic] = useState(true)
   const [paragraphHasItalic, setParagraphHasItalic] = useState(true)
 
-  // State for content
   const [headingContent, setHeadingContent] = useState(DEFAULT_HEADING)
   const [paragraphContent, setParagraphContent] = useState(DEFAULT_PARAGRAPH)
 
-  // State for copy button
   const [copied, setCopied] = useState(false)
 
-  // Load fonts from local JSON file
-  useEffect(() => {
+  const loadFontsFromAPI = async (page = 0) => {
     try {
+      setIsLoadingMore(true)
+      const result = await fetchGoogleFontsBatch(page, 20, selectedCategory)
+
+      if (result.fonts.length > 0) {
+        const processedFonts = result.fonts.map((font: any) => ({
+          family: font.family,
+          category: font.category,
+          variants: font.variants || ["regular", "700"],
+        }))
+
+        if (page === 0) {
+          setFonts(processedFonts)
+          setFilteredFonts(processedFonts)
+        } else {
+          setFonts((prevFonts) => [...prevFonts, ...processedFonts])
+          setFilteredFonts((prevFonts) => [...prevFonts, ...processedFonts])
+        }
+
+        setCurrentPage(page)
+        setHasMoreFonts(result.hasMore)
+        setTotalFonts(result.totalFonts)
+        setTotalLoaded(result.totalLoaded)
+
+        console.log(`Loaded ${processedFonts.length} fonts. Total: ${result.totalLoaded}/${result.totalFonts}`)
+      } else {
+        setHasMoreFonts(false)
+      }
+    } catch (error) {
+      console.error("Error loading fonts from API:", error)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMoreFonts) return
+    await loadFontsFromAPI(currentPage + 1)
+  }
+
+  useEffect(() => {
+    if (initialLoadComplete) {
+      setCurrentPage(0)
+      setHasMoreFonts(true)
+      loadFontsFromAPI(0)
+    }
+  }, [selectedCategory, initialLoadComplete])
+
+  useEffect(() => {
+    const initializeFonts = async () => {
       setIsLoading(true)
 
-      // Log the local fonts data to debug
-      console.log("Local fonts data:", localFontsData)
+      try {
+        await loadFontsFromAPI(0)
 
-      // Check if localFontsData is properly structured
-      if (localFontsData && Array.isArray(localFontsData.items) && localFontsData.items.length > 0) {
-        console.log(`Successfully loaded ${localFontsData.items.length} fonts`)
-        setFonts(localFontsData.items)
-        setFilteredFonts(localFontsData.items)
+        if (fonts.length > 0) {
+          setHeadingAvailableWeights(getAvailableWeights(headingFont, fonts))
+          setParagraphAvailableWeights(getAvailableWeights(paragraphFont, fonts))
 
-        // Set available weights for initial fonts
-        setHeadingAvailableWeights(getAvailableWeights(headingFont, localFontsData.items))
-        setParagraphAvailableWeights(getAvailableWeights(paragraphFont, localFontsData.items))
+          setHeadingHasItalic(hasItalicVariant(headingFont, fonts))
+          setParagraphHasItalic(hasItalicVariant(paragraphFont, fonts))
+        }
 
-        // Check if italic is available for initial fonts
-        setHeadingHasItalic(hasItalicVariant(headingFont, localFontsData.items))
-        setParagraphHasItalic(hasItalicVariant(paragraphFont, localFontsData.items))
-      } else {
-        console.error("Invalid font data structure:", localFontsData)
-        // Provide fallback fonts if the JSON is invalid
+        setInitialLoadComplete(true)
+      } catch (error) {
+        console.error("Error initializing fonts:", error)
+
         const fallbackFonts = [
           {
             family: "Roboto",
-            category: "sans-serif",
+            category: "Sans Serif",
             variants: ["400", "700", "400italic", "700italic"],
           },
           {
             family: "Playfair Display",
-            category: "serif",
+            category: "Serif",
             variants: ["400", "700", "400italic", "700italic"],
           },
           {
             family: "Source Sans Pro",
-            category: "sans-serif",
+            category: "Sans Serif",
             variants: ["400", "700", "400italic", "700italic"],
           },
         ]
         setFonts(fallbackFonts)
-        setFilteredFonts(fallbackFonts)
+        setFilteredFonts(fallbackFonts.filter((font) => font.category === "Sans Serif"))
+        setTotalLoaded(fallbackFonts.length)
+        setTotalFonts(fallbackFonts.length)
+      } finally {
+        setIsLoading(false)
       }
-
-      setIsLoading(false)
-    } catch (error) {
-      console.error("Error loading fonts:", error)
-      setIsLoading(false)
-
-      // Provide fallback fonts in case of error
-      const fallbackFonts = [
-        {
-          family: "Roboto",
-          category: "sans-serif",
-          variants: ["400", "700", "400italic", "700italic"],
-        },
-        {
-          family: "Playfair Display",
-          category: "serif",
-          variants: ["400", "700", "400italic", "700italic"],
-        },
-        {
-          family: "Source Sans Pro",
-          category: "sans-serif",
-          variants: ["400", "700", "400italic", "700italic"],
-        },
-      ]
-      setFonts(fallbackFonts)
-      setFilteredFonts(fallbackFonts)
     }
+
+    initializeFonts()
   }, [])
 
-  // Update available weights when font changes
   useEffect(() => {
     if (fonts.length > 0) {
       setHeadingAvailableWeights(getAvailableWeights(headingFont, fonts))
       setHeadingHasItalic(hasItalicVariant(headingFont, fonts))
 
-      // If current weight is not available in the new font, reset to a default
       if (!getAvailableWeights(headingFont, fonts).includes(headingSettings.fontWeight)) {
         const availableWeights = getAvailableWeights(headingFont, fonts)
         setHeadingSettings({
@@ -398,7 +547,6 @@ export default function FontPairingGenerator() {
         })
       }
 
-      // If italic is selected but not available, remove it
       if (headingSettings.textStyle.includes("italic") && !hasItalicVariant(headingFont, fonts)) {
         setHeadingSettings({
           ...headingSettings,
@@ -406,14 +554,13 @@ export default function FontPairingGenerator() {
         })
       }
     }
-  }, [headingFont, fonts])
+  }, [headingFont, fonts, headingSettings])
 
   useEffect(() => {
     if (fonts.length > 0) {
       setParagraphAvailableWeights(getAvailableWeights(paragraphFont, fonts))
       setParagraphHasItalic(hasItalicVariant(paragraphFont, fonts))
 
-      // If current weight is not available in the new font, reset to a default
       if (!getAvailableWeights(paragraphFont, fonts).includes(paragraphSettings.fontWeight)) {
         const availableWeights = getAvailableWeights(paragraphFont, fonts)
         setParagraphSettings({
@@ -422,7 +569,6 @@ export default function FontPairingGenerator() {
         })
       }
 
-      // If italic is selected but not available, remove it
       if (paragraphSettings.textStyle.includes("italic") && !hasItalicVariant(paragraphFont, fonts)) {
         setParagraphSettings({
           ...paragraphSettings,
@@ -430,17 +576,42 @@ export default function FontPairingGenerator() {
         })
       }
     }
-  }, [paragraphFont, fonts])
+  }, [paragraphFont, fonts, paragraphSettings])
 
-  // Load selected fonts with weights and styles
   useEffect(() => {
-    if (headingFont && paragraphFont) {
+    if (headingFont && paragraphFont && fonts.length > 0) {
       const isHeadingItalic = headingSettings.textStyle.includes("italic")
       const isParagraphItalic = paragraphSettings.textStyle.includes("italic")
 
+      let headingWeight = headingSettings.fontWeight
+      if (!FontLoader.isWeightAvailable(headingFont, headingWeight, fonts)) {
+        const availableWeights = getAvailableWeights(headingFont, fonts)
+        headingWeight = availableWeights.includes("400") ? "400" : availableWeights[0] || "400"
+
+        if (headingWeight !== headingSettings.fontWeight) {
+          setHeadingSettings({
+            ...headingSettings,
+            fontWeight: headingWeight,
+          })
+        }
+      }
+
+      let paragraphWeight = paragraphSettings.fontWeight
+      if (!FontLoader.isWeightAvailable(paragraphFont, paragraphWeight, fonts)) {
+        const availableWeights = getAvailableWeights(paragraphFont, fonts)
+        paragraphWeight = availableWeights.includes("400") ? "400" : availableWeights[0] || "400"
+
+        if (paragraphWeight !== paragraphSettings.fontWeight) {
+          setParagraphSettings({
+            ...paragraphSettings,
+            fontWeight: paragraphWeight,
+          })
+        }
+      }
+
       FontLoader.loadFontConfigs([
-        { family: headingFont, weight: headingSettings.fontWeight, isItalic: isHeadingItalic },
-        { family: paragraphFont, weight: paragraphSettings.fontWeight, isItalic: isParagraphItalic },
+        { family: headingFont, weight: headingWeight, isItalic: isHeadingItalic },
+        { family: paragraphFont, weight: paragraphWeight, isItalic: isParagraphItalic },
       ])
     }
   }, [
@@ -450,20 +621,9 @@ export default function FontPairingGenerator() {
     paragraphSettings.fontWeight,
     headingSettings.textStyle,
     paragraphSettings.textStyle,
+    fonts,
   ])
-
-  // Filter fonts by category
-  useEffect(() => {
-    if (selectedCategory === "all") {
-      setFilteredFonts(fonts)
-    } else {
-      setFilteredFonts(fonts.filter((font) => font.category === selectedCategory))
-    }
-  }, [selectedCategory, fonts])
-
-  // Handle text style toggle for heading
   const handleHeadingTextStyleToggle = (value: string[]) => {
-    // If trying to add italic but it's not available, don't add it
     if (value.includes("italic") && !headingHasItalic && !headingSettings.textStyle.includes("italic")) {
       return
     }
@@ -474,9 +634,7 @@ export default function FontPairingGenerator() {
     })
   }
 
-  // Handle text style toggle for paragraph
   const handleParagraphTextStyleToggle = (value: string[]) => {
-    // If trying to add italic but it's not available, don't add it
     if (value.includes("italic") && !paragraphHasItalic && !paragraphSettings.textStyle.includes("italic")) {
       return
     }
@@ -487,7 +645,6 @@ export default function FontPairingGenerator() {
     })
   }
 
-  // Handle unit change for heading
   const handleHeadingUnitChange = (property: string, unit: string) => {
     if (property === "fontSize") {
       setHeadingSettings({
@@ -520,7 +677,6 @@ export default function FontPairingGenerator() {
     }
   }
 
-  // Handle unit change for paragraph
   const handleParagraphUnitChange = (property: string, unit: string) => {
     if (property === "fontSize") {
       setParagraphSettings({
@@ -557,30 +713,24 @@ export default function FontPairingGenerator() {
     }
   }
 
-  // Helper function to convert values between units (simplified conversion)
   const convertValueBetweenUnits = (value: number, fromUnit: string, toUnit: string): number => {
     if (fromUnit === toUnit) return value
 
-    // This is a simplified conversion - in a real app, you'd want more accurate conversions
-    // based on the actual context (base font size, viewport size, etc.)
     const pxEquivalents: Record<string, number> = {
       px: 1,
-      rem: 16, // assuming 1rem = 16px
-      em: 16, // assuming 1em = 16px
-      "%": 0.16, // assuming 100% = 16px
-      vh: 7.2, // assuming 1vh = 7.2px (on a 720px height viewport)
-      vw: 12.8, // assuming 1vw = 12.8px (on a 1280px width viewport)
-      ch: 8, // assuming 1ch = 8px
+      rem: 16,
+      em: 16,
+      "%": 0.16,
+      vh: 7.2,
+      vw: 12.8,
+      ch: 8,
     }
 
-    // Convert to px first
     const pxValue = value * pxEquivalents[fromUnit]
 
-    // Then convert from px to target unit
     return Number.parseFloat((pxValue / pxEquivalents[toUnit]).toFixed(4))
   }
 
-  // Helper function to get text decoration CSS value
   const getTextDecoration = (textStyle: string[]): string => {
     const decorations = []
     if (textStyle.includes("underline")) decorations.push("underline")
@@ -588,14 +738,11 @@ export default function FontPairingGenerator() {
     return decorations.length > 0 ? decorations.join(" ") : "none"
   }
 
-  // Helper function to get font style CSS value
   const getFontStyle = (textStyle: string[]): string => {
     return textStyle.includes("italic") ? "italic" : "normal"
   }
 
-  // Generate CSS
   const generateCSS = () => {
-    // Determine which font weights and styles to import
     const headingImport = headingSettings.textStyle.includes("italic")
       ? `${headingFont.replace(/ /g, "+")}:ital,wght@1,${headingSettings.fontWeight}`
       : `${headingFont.replace(/ /g, "+")}:wght@${headingSettings.fontWeight}`
@@ -632,14 +779,12 @@ p, li, blockquote {
 }`
   }
 
-  // Copy CSS to clipboard
   const handleCopyCSS = () => {
     navigator.clipboard.writeText(generateCSS())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Get range for a specific property based on its unit
   const getRange = (property: string, unit: string) => {
     if (property === "lineHeight") {
       return LINE_HEIGHT_RANGE
@@ -689,6 +834,11 @@ p, li, blockquote {
                   onValueChange={setHeadingFont}
                   fonts={filteredFonts}
                   isLoading={isLoading}
+                  onLoadMore={handleLoadMore}
+                  isLoadingMore={isLoadingMore}
+                  hasMoreFonts={hasMoreFonts}
+                  totalLoaded={totalLoaded}
+                  totalFonts={totalFonts}
                 />
               </div>
 
@@ -872,6 +1022,11 @@ p, li, blockquote {
                   onValueChange={setParagraphFont}
                   fonts={filteredFonts}
                   isLoading={isLoading}
+                  onLoadMore={handleLoadMore}
+                  isLoadingMore={isLoadingMore}
+                  hasMoreFonts={hasMoreFonts}
+                  totalLoaded={totalLoaded}
+                  totalFonts={totalFonts}
                 />
               </div>
 

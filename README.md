@@ -72,6 +72,13 @@ Then visit [http://localhost:3000](http://localhost:3000) to view it in the brow
 └── README.md
 ```
 
+## To Do
+
+- Add font previews to select
+- Create AI suggestions for font pairings
+- Add other text options, like gradients, shadows
+- Add right click context menu to allow inline editing when selecting text
+
 ## License
 
 [MIT](./LICENSE)

@@ -56,22 +56,6 @@ pnpm run dev
 
 Then visit [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-## Project Structure
-
-```bash
-/fonts.defeo.io
-│
-├── public/            # Static assets and screenshot
-├── scripts/           # Scripts for fetching and updating font data
-├── src/               # App source code
-│   └── components/    # UI components
-│   └── lib/           # Utilities and logic
-│   └── data/          # fonts.json lives here
-├── .env               # Add your API key here
-├── package.json
-└── README.md
-```
-
 ## To Do
 
 - Add font previews to select

@@ -46,6 +46,12 @@ Once fonts are fetched, update the local fonts.json file used by the app:
 node scripts/update-google-fonts.js
 ```
 
+### 4. Add Google Fonts API Key
+
+- Rename .env.example to .env
+- Add value for your Google Fonts API key
+- Or, use your hosting environment to add the environment variable
+
 ## Development
 
 This project is automatically deployed to Vercel. To start the local dev server:

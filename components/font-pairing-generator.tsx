@@ -90,7 +90,7 @@ const LINE_HEIGHT_RANGE = { min: 1, max: 2.5, step: 0.1 }
 
 const getAvailableWeights = (fontFamily: string, fonts: any[]): string[] => {
   const font = fonts.find((f) => f.family === fontFamily)
-  if (!font || !font.variants || font.variants.length === 0) return ["400", "700"] 
+  if (!font || !font.variants || font.variants.length === 0) return ["400", "700"]
 
   const weights = font.variants
     .map((variant: string) => {
@@ -166,15 +166,27 @@ const FontLoader = {
 
 let googleFontsCache: any[] | null = null
 
+function getGoogleFontsApiKey() {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_FONTS_API_KEY
+  if (!apiKey) {
+    console.warn("Google Fonts API key not found in environment variables. Using local fonts only.")
+    return null
+  }
+  return apiKey
+}
+
 async function fetchAllGoogleFonts() {
   if (googleFontsCache) {
     return googleFontsCache
   }
 
   try {
-    const response = await fetch(
-      "https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc",
-    )
+    const apiKey = getGoogleFontsApiKey()
+    if (!apiKey) {
+      return []
+    }
+
+    const response = await fetch(`https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}`)
     if (!response.ok) {
       throw new Error(`Failed to fetch fonts: ${response.status} ${response.statusText}`)
     }
@@ -414,7 +426,7 @@ export default function FontPairingGenerator() {
     letterSpacing: { value: 0, unit: "px" },
     wordSpacing: { value: 0, unit: "px" },
     fontWeight: "700",
-    textStyle: [] as string[], 
+    textStyle: [] as string[],
   })
 
   const [paragraphSettings, setParagraphSettings] = useState({
@@ -569,14 +581,8 @@ export default function FontPairingGenerator() {
         })
       }
 
-      if (paragraphSettings.textStyle.includes("italic") && !hasItalicVariant(paragraphFont, fonts)) {
-        setParagraphSettings({
-          ...paragraphSettings,
-          textStyle: paragraphSettings.textStyle.filter((style) => style !== "italic"),
-        })
-      }
     }
-  }, [paragraphFont, fonts, paragraphSettings])
+  }, [paragraphFont, fonts])
 
   useEffect(() => {
     if (headingFont && paragraphFont && fonts.length > 0) {
@@ -628,10 +634,10 @@ export default function FontPairingGenerator() {
       return
     }
 
-    setHeadingSettings({
-      ...headingSettings,
+    setHeadingSettings((prev) => ({
+      ...prev,
       textStyle: value,
-    })
+    }))
   }
 
   const handleParagraphTextStyleToggle = (value: string[]) => {
@@ -639,10 +645,10 @@ export default function FontPairingGenerator() {
       return
     }
 
-    setParagraphSettings({
-      ...paragraphSettings,
+    setParagraphSettings((prev) => ({
+      ...prev,
       textStyle: value,
-    })
+    }))
   }
 
   const handleHeadingUnitChange = (property: string, unit: string) => {
@@ -718,11 +724,11 @@ export default function FontPairingGenerator() {
 
     const pxEquivalents: Record<string, number> = {
       px: 1,
-      rem: 16,
-      em: 16,
-      "%": 0.16,
-      vh: 7.2,
-      vw: 12.8,
+      rem: 16, 
+      em: 16, 
+      "%": 0.16, 
+      vh: 7.2, 
+      vw: 12.8, 
       ch: 8,
     }
 

@@ -1,4 +1,4 @@
-# 🎨 Google Fonts Pairing Tool
+# Google Fonts Pairing Tool
 
 An intuitive web app that helps designers and developers explore and pair Google Fonts with ease. Try it live at **[fonts.defeo.io](https://fonts.defeo.io)**
 
@@ -71,7 +71,7 @@ Then visit [http://localhost:3000](http://localhost:3000) to view it in the brow
 
 ## License
 
-[MIT](./LICENSE)
+[Apache](./LICENSE)
 
 ## Author
 
